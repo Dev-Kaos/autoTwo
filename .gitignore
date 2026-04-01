@@ -1,0 +1,30 @@
+# --- Entornos Virtuales ---
+# Nunca subas la carpeta de tu entorno de Conda o venv
+.env/
+env/
+venv/
+ENV/
+bin/
+lib/
+include/
+
+# --- Variables de Entorno ---
+# Muy importante: aquí guardas tus API keys o rutas locales
+.env
+.flaskenv
+
+# --- Caché de Python ---
+# Archivos temporales que genera Python al ejecutarse
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Datos y Reportes ---
+# Si generas CSVs o Excels de prueba, mejor que no se suban
+*.csv
+*.xlsx
+*.log
+
+# --- IDEs (VS Code / PyCharm) ---
+.vscode/
+.idea/
