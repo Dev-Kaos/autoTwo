@@ -7,6 +7,8 @@ ENV/
 bin/
 lib/
 include/
+assets/
+data/
 
 # --- Variables de Entorno ---
 # Muy importante: aquí guardas tus API keys o rutas locales
@@ -24,6 +26,7 @@ __pycache__/
 *.csv
 *.xlsx
 *.log
+*.json
 
 # --- IDEs (VS Code / PyCharm) ---
 .vscode/
