@@ -1,0 +1,24 @@
+name: autoTwo
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - bzip2=1.0.8=h0ad9c76_9
+  - ca-certificates=2026.2.25=h4c7d964_0
+  - libexpat=2.7.5=hac47afa_0
+  - libffi=3.5.2=h3d046cb_0
+  - liblzma=5.8.2=hfd05255_0
+  - libmpdec=4.0.0=hfd05255_1
+  - libsqlite=3.52.0=hf5d6505_0
+  - libzlib=1.3.2=hfd05255_2
+  - openssl=3.6.1=hf411b9b_1
+  - pip=26.0.1=pyh145f28c_0
+  - python=3.13.12=h09917c8_100_cp313
+  - python_abi=3.13=8_cp313
+  - tk=8.6.13=h6ed50ae_3
+  - tzdata=2025c=hc9c84f9_1
+  - ucrt=10.0.26100.0=h57928b3_0
+  - vc=14.3=h41ae7f8_34
+  - vc14_runtime=14.44.35208=h818238b_34
+  - vcomp14=14.44.35208=h818238b_34
+prefix: C:\Users\SoporteTI\anaconda3\envs\autoTwo
