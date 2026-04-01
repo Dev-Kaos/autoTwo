@@ -1,5 +1,4 @@
-""" Proyecto de automatización para el NOC.
-El main es el orquestador principal enciende la maquina y conecta los cables(inyeccion de dependencias)"""
+""" main es el orquestador enciende la maquina y conecta los cables(inyeccion de dependencias)"""
 
 # main.py
 import flet as ft
