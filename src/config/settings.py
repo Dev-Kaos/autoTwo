@@ -9,6 +9,8 @@ class Config:
 
     # --- NUEVA RUTA PARA EL USUARIO ---
     USER_CONFIG_FILE = BASE_DIR / "data" / "user_data.json"
+    MESSAGES_CONFIG_FILE = BASE_DIR / "data" / "message_data.json"
+    # --- NUEVA RUTA PARA EL USUARIO ---
 
     # Tus rutas existentes
     INPUT_FILE = BASE_DIR / "assets" / "inputs" / "wm_order.xlsx"
