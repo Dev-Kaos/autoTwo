@@ -8,10 +8,12 @@ class MainScreenController:
     Actúa como puente entre la Vista (Flet) y los Servicios (JSON/Excel).
     """
 
-    def __init__(self, page, config_service, message_service, report_service):
+    # --- ACTUALIZADO: Ahora recibe mail_list_service ---
+    def __init__(self, page, config_service, message_service, mail_list_service, report_service):
         self.page = page
         self.config_service = config_service
         self.message_service = message_service
+        self.mail_list_service = mail_list_service  # Servicio para la lista de correos
         self.report_service = report_service
 
         # --- REFERENCIAS DE UI (Vínculos con la pantalla) ---
@@ -22,6 +24,7 @@ class MainScreenController:
         self.txt_new_email = None
         self.txt_new_token = None
         self.txt_mensaje_correo = None
+        self.lbl_resumen_envio = None  # Referencia para el texto de destinatarios
 
     # --- LÓGICA DE VALIDACIÓN (En tiempo real) ---
     def validar_campos_credenciales(self, e):
@@ -70,6 +73,88 @@ class MainScreenController:
         texto = self.txt_mensaje_correo.value
         self.message_service.save_message(slot, texto)
         self._notificar(f"Mensaje guardado en Slot {slot}")
+
+    # --- NUEVA LÓGICA: GESTIÓN DE DESTINATARIOS ---
+
+    def actualizar_resumen_destinatarios(self):
+        """Refresca el texto informativo en formato vertical"""
+        lista = self.mail_list_service.get_all_emails()
+        cant = len(lista)
+
+        if self.lbl_resumen_envio:
+            if cant > 0:
+                # Unimos los correos con un salto de línea (\n) para que se vean uno abajo del otro
+                # Mostramos máximo los primeros 5 para no alargar demasiado la pantalla
+                visibles = lista[:5]
+                texto_vertical = "\n".join(visibles)
+
+                if cant > 5:
+                    texto_vertical += f"\n... y {cant - 5} más"
+
+                self.lbl_resumen_envio.value = f"Enviar a:\n{texto_vertical}"
+            else:
+                self.lbl_resumen_envio.value = "Sin destinatarios configurados"
+
+            self.page.update()
+
+    def abrir_ajustes_correo(self, e):
+        """Despliega el AlertDialog para agregar o quitar correos"""
+        lista_visual = ft.Column(scroll=ft.ScrollMode.ALWAYS, height=200)
+        txt_nuevo_correo = ft.TextField(label="Nuevo correo", expand=True)
+
+        def eliminar_correo(correo_texto):
+            actuales = self.mail_list_service.get_all_emails()
+            if correo_texto in actuales:
+                actuales.remove(correo_texto)
+                self.mail_list_service.save_emails(actuales)
+                actualizar_lista_visual()
+                self.actualizar_resumen_destinatarios()
+
+        def agregar_correo(e):
+            if txt_nuevo_correo.value.strip():
+                actuales = self.mail_list_service.get_all_emails()
+                actuales.append(txt_nuevo_correo.value.strip())
+                self.mail_list_service.save_emails(actuales)
+                txt_nuevo_correo.value = ""
+                actualizar_lista_visual()
+                self.actualizar_resumen_destinatarios()
+
+        def actualizar_lista_visual():
+            lista_visual.controls.clear()
+            for correo in self.mail_list_service.get_all_emails():
+                lista_visual.controls.append(
+                    ft.Row([
+                        ft.Text(correo, expand=True),
+                        ft.IconButton(
+                            ft.Icons.DELETE,
+                            icon_color="red",
+                            on_click=lambda _, c=correo: eliminar_correo(c)
+                        )
+                    ])
+                )
+            self.page.update()
+
+        actualizar_lista_visual()
+
+        dlg = ft.AlertDialog(
+            title=ft.Text("Lista de Destinatarios"),
+            content=ft.Column(controls=[
+                lista_visual,
+                ft.Row(controls=[
+                    txt_nuevo_correo,
+                    ft.IconButton(ft.Icons.ADD, on_click=agregar_correo)
+                ]),
+            ], tight=True, width=400),
+            actions=[
+                ft.TextButton("Cerrar", on_click=lambda _: (
+                    setattr(dlg, "open", False), self.page.update()
+                ))
+            ],
+        )
+
+        self.page.overlay.append(dlg)
+        dlg.open = True
+        self.page.update()
 
     # --- LÓGICA DE ACCIÓN (Ejecución de Tareas) ---
     def ejecutar_flujo_reporte(self, e):

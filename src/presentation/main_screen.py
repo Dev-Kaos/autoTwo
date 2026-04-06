@@ -2,16 +2,15 @@ import flet as ft
 from src.presentation.main_screen_controller import MainScreenController
 
 
-def main_screen(page: ft.Page, config_service, message_service, report_service):
+def main_screen(page: ft.Page, config_service, message_service, mail_list_service, report_service):
     """
     VISTA PRINCIPAL: Solo contiene la estructura jerárquica de la interfaz (Layout).
     """
-    # 1. Instanciar el Controlador
+    # 1. Instanciar el Controlador (AÑADIMOS mail_list_service al constructor)
     controller = MainScreenController(
-        page, config_service, message_service, report_service)
+        page, config_service, message_service, mail_list_service, report_service)
 
     # 2. DEFINICIÓN DE COMPONENTES VISUALES
-    # Estos componentes se asignan al controlador para que él pueda manipular sus valores
     controller.lbl_actual_email = ft.Text(
         value=config_service.get_email() or "Sin correo",
         color="green", weight="bold", width=200
@@ -19,6 +18,12 @@ def main_screen(page: ft.Page, config_service, message_service, report_service):
     controller.lbl_actual_token = ft.Text(
         value=config_service.get_token() or "Sin clave",
         color="green", weight="bold", width=200
+    )
+
+    # --- NUEVO: COMPONENTE PARA RESUMEN DE DESTINATARIOS ---
+    controller.lbl_resumen_envio = ft.Text(
+        value="Cargando destinatarios...",
+        color="blue", weight="bold"
     )
 
     # Labels informativos de validación
@@ -43,6 +48,9 @@ def main_screen(page: ft.Page, config_service, message_service, report_service):
         multiline=True, min_lines=10, width=500,
         hint_text="Redacte aquí el contenido del correo..."
     )
+
+    # --- NUEVO: CARGA INICIAL DEL RESUMEN ---
+    controller.actualizar_resumen_destinatarios()
 
     # 3. CONSTRUCTORES DE ELEMENTOS REPETITIVOS
     def build_slot_row(n):
@@ -74,7 +82,7 @@ def main_screen(page: ft.Page, config_service, message_service, report_service):
             ft.ElevatedButton("Actualizar Credenciales", icon=ft.Icons.SYNC,
                               on_click=controller.guardar_credenciales),
 
-            ft.Divider(height=30, color="transparent"),  # Espaciador
+            ft.Divider(height=30, color="transparent"),
 
             # SECCIÓN: Panel de Mensajería (Slots y Textbox)
             ft.Row([
@@ -93,7 +101,25 @@ def main_screen(page: ft.Page, config_service, message_service, report_service):
                 controller.txt_mensaje_correo
             ], alignment="center", spacing=40),
 
-            ft.Divider(height=30, color="transparent"),
+            ft.Divider(height=20),
+
+            # --- NUEVA SECCIÓN: GESTIÓN DE DESTINATARIOS ---
+            ft.Container(
+                content=ft.Row([
+                    ft.Icon(ft.Icons.EMAIL_OUTLINED, color="blue"),
+                    controller.lbl_resumen_envio,
+                    ft.ElevatedButton(
+                        "Editar Destinatarios",
+                        icon=ft.Icons.EDIT,
+                        on_click=controller.abrir_ajustes_correo
+                    )
+                ], alignment="center", spacing=20),
+                padding=10,
+                bgcolor=ft.Colors.GREY_50,
+                border_radius=10
+            ),
+
+            ft.Divider(height=20, color="transparent"),
 
             # SECCIÓN: Botón de Acción Principal
             ft.ElevatedButton(

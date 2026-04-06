@@ -10,6 +10,7 @@ class Config:
     # --- NUEVA RUTA PARA EL USUARIO ---
     USER_CONFIG_FILE = BASE_DIR / "data" / "user_data.json"
     MESSAGES_CONFIG_FILE = BASE_DIR / "data" / "message_data.json"
+    MAIL_LIST_FILE = BASE_DIR / "data" / "mail_list_data.json"
     # --- NUEVA RUTA PARA EL USUARIO ---
 
     # Tus rutas existentes
