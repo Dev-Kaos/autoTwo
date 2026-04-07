@@ -157,10 +157,17 @@ class MainScreenController:
         self.page.update()
 
     # --- LÓGICA DE ACCIÓN (Ejecución de Tareas) ---
+
     def ejecutar_flujo_reporte(self, e):
-        """Dispara la lógica de procesamiento de Pandas en el ReportService"""
-        self._notificar("Iniciando procesamiento de reportes...")
-        self.report_service.ejecutar_accion()
+        try:
+            self._notificar("🖥️ Abriendo navegador para ServiceNow...")
+            self.report_service.descargar_reporte_selenium()
+
+            # Aquí podrías pedirle al usuario que ahora pegue la ruta del archivo que bajó
+            self._notificar(
+                "📂 Ahora pega la ruta del archivo descargado arriba.")
+        except Exception as ex:
+            self._notificar(f"❌ Error: {str(ex)}")
 
     def _notificar(self, texto):
         """Helper para mostrar mensajes rápidos en la parte inferior (SnackBar)"""
