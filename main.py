@@ -14,7 +14,7 @@ def main(page: ft.Page):
     config_service = ConfigUserService()
     message_service = MessageService()
     mail_list_service = MailListService()  # <--- CREAR LA INSTANCIA
-    report_service = ReportService()
+    report_service = ReportService(config_service)
 
     # 2. Cargar la pantalla pasando los 5 argumentos en el orden correcto
     page.add(
