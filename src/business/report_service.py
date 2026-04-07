@@ -5,11 +5,13 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver import ActionChains
 
 
 class ReportService:
     def __init__(self, config_service):
         self.config_service = config_service
+        # URL base de la lista de casos en ServiceNow
         self.url_servicenow = "https://oncoprod.service-now.com/now/nav/ui/classic/params/target/sn_customerservice_case_list.do"
 
     def descargar_automaticamente(self, user_corp, pass_sso):
@@ -17,7 +19,7 @@ class ReportService:
         chrome_options.add_argument("--start-maximized")
         chrome_options.add_argument("--disable-extensions")
 
-        # AQUÍ SE DEFINE EL DRIVER
+        # Inicialización del driver
         driver = webdriver.Chrome(options=chrome_options)
         wait = WebDriverWait(driver, 25)
 
@@ -31,9 +33,9 @@ class ReportService:
                     (By.XPATH, "//a[contains(@href, 'login_locate_sso.do')]")))
                 sso_link.click()
             except:
-                print("Aviso: Link de SSO no detectado.")
+                print("Aviso: Link de SSO no detectado o ya logueado.")
 
-            # --- 2. PASO: SELECTOR DE CORREO ---
+            # --- 2. PASO: SELECTOR DE CORREO ON NET ---
             try:
                 sso_input = wait.until(
                     EC.presence_of_element_located((By.ID, "sso_selector_id")))
@@ -75,37 +77,81 @@ class ReportService:
                 if not check_box.is_selected():
                     check_box.click()
                 driver.find_element(By.ID, "idSIButton9").click()
+                print("Login completado exitosamente.")
             except:
                 print("Aviso: Pantalla de 'Mantener sesión' no apareció.")
 
-            # --- 6. REDIRECCIÓN AL REPORTE GMR_NOC_PROD ---
-            print("Redirigiendo a la vista final del reporte...")
-            url_final = (
+            # --- 6. NAVEGACIÓN CON FILTROS ---
+            # Usamos la URL con los parámetros sysparm_query para filtrar por tu grupo GMR_NOC_PROD
+            url_con_filtros = (
                 "https://oncoprod.service-now.com/now/nav/ui/classic/params/target/"
                 "sn_customerservice_case_list.do?sysparm_query=stateNOT%20IN6%2C3%2C7"
-                "%5Eassignment_groupSTARTSWITHGMR_NOC_PROD%5Esys_created_on%3E"
-                "javascript%3Ags.dateGenerate(%272024-10-15%27%2C%2700%3A00%3A01%27)"
+                "%5Eassignment_groupSTARTSWITHGMR_NOC_PROD"
+                "%5Esys_created_on%3Ejavascript%3Ags.dateGenerate(%272024-10-15%27%2C%2700%3A00%3A01%27)"
                 "%5Eshort_descriptionNOT%20LIKEAlert%20Integration"
-                "&sysparm_first_row=1&sysparm_view=case"
             )
+            print("Aplicando filtros de búsqueda...")
+            driver.get(url_con_filtros)
 
-            # Usamos la variable 'driver' que definimos al inicio del método
-            driver.get(url_final)
-            time.sleep(7)
+            # Tiempo para que el ASUS A15 y la conexión procesen la consulta pesada
+            time.sleep(10)
 
-            # Entrar al frame para poder interactuar con la tabla después
+            # --- 7. EXPORTACIÓN (DENTRO DEL SHADOW DOM) ---
             try:
-                driver.switch_to.frame("gsft_main")
-                print("Dentro del frame de datos.")
-            except:
-                pass
+                print("Accediendo a la capa Shadow DOM de On Net Fibra...")
+                driver.switch_to.default_content()
 
-            return True
+                # Localizamos el componente raíz de Polaris detectado en descargarKPI.py
+                host_shadow = wait.until(EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, 'macroponent-f51912f4c700201072b211d4d8c26010')
+                ))
+
+                shadow_root = host_shadow.shadow_root
+                iframe_interno = shadow_root.find_element(
+                    By.CSS_SELECTOR, 'iframe[id="gsft_main"]')
+                driver.switch_to.frame(iframe_interno)
+                print("Foco establecido dentro de la tabla filtrada.")
+
+                # Clic derecho en la cabecera 'Número' (name='number')
+                th_numero = wait.until(EC.element_to_be_clickable(
+                    (By.CSS_SELECTOR, 'th[name="number"]')))
+                ActionChains(driver).context_click(th_numero).perform()
+                time.sleep(2)
+
+                # Exportar > Excel usando los IDs internos que funcionan en tu empresa
+                print("Seleccionando formato de exportación...")
+                # ID para el menú 'Exportar'
+                wait.until(EC.element_to_be_clickable(
+                    (By.CSS_SELECTOR,
+                     'div[item_id="d1ad2f010a0a0b3e005c8b7fbd7c4e28"]')
+                )).click()
+
+                # ID para la opción 'Excel (.xlsx)'
+                wait.until(EC.element_to_be_clickable(
+                    (By.CSS_SELECTOR,
+                     'div[item_id="f13f0041473012003db6d7527c9a71f0"]')
+                )).click()
+
+                # --- 8. DIÁLOGO DE DESCARGA FINAL ---
+                print("Esperando procesamiento del servidor...")
+                # Esperamos al botón final del cuadro de diálogo
+                btn_final = wait.until(
+                    EC.element_to_be_clickable((By.ID, "download_button")))
+                btn_final.click()
+                print("¡Descarga iniciada exitosamente!")
+
+                driver.switch_to.default_content()
+                time.sleep(10)
+                return True
+
+            except Exception as e:
+                print(f"Error en la fase de exportación: {e}")
+                driver.save_screenshot("error_final_kcode.png")
+                return False
 
         except Exception:
-            print("--- ERROR DETALLADO ---")
+            print("--- ERROR CRÍTICO EN LA EJECUCIÓN ---")
             print(traceback.format_exc())
             return False
         finally:
-            # driver.quit() # Mantener abierto para validar
-            pass
+            driver.quit()
