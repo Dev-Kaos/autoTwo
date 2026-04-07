@@ -9,6 +9,7 @@ lib/
 include/
 assets/
 data/
+config/
 
 # --- Variables de Entorno ---
 # Muy importante: aquí guardas tus API keys o rutas locales

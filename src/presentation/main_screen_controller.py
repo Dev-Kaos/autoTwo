@@ -25,6 +25,8 @@ class MainScreenController:
         self.txt_new_token = None
         self.txt_mensaje_correo = None
         self.lbl_resumen_envio = None  # Referencia para el texto de destinatarios
+        self.txt_new_password_sso = None
+        self.lbl_valida_sso = None
 
     # --- LÓGICA DE VALIDACIÓN (En tiempo real) ---
     def validar_campos_credenciales(self, e):
@@ -43,6 +45,12 @@ class MainScreenController:
         self.lbl_valida_token.value = "Token completo" if es_token_ok else f"{len(token_limpio)}/16 dígitos"
         self.lbl_valida_token.color = "green" if es_token_ok else "orange"
 
+        es_sso_ok = len(self.txt_new_password_sso.value.strip()) > 0
+
+        if self.lbl_valida_sso:
+            self.lbl_valida_sso.value = "Clave lista" if es_sso_ok else "Clave vacía"
+            self.lbl_valida_sso.color = "green" if es_sso_ok else "red"
+
         self.page.update()
 
     # --- LÓGICA DE PERSISTENCIA (Escritura en JSON) ---
@@ -50,14 +58,16 @@ class MainScreenController:
         """Toma los datos de los inputs y los envía al ConfigUserService"""
         email = self.txt_new_email.value.strip()
         token = self.txt_new_token.value.replace(" ", "")
+        password_sso = self.txt_new_password_sso.value.strip()
 
         if self.lbl_valida_correo.color == "green" and len(token) == 16:
-            self.config_service.save_credentials(email, token)
+            self.config_service.save_credentials(email, token, password_sso)
             self.lbl_actual_email.value = email
             self.lbl_actual_token.value = token
             # Limpiar campos después de guardar
             self.txt_new_email.value = ""
             self.txt_new_token.value = ""
+            self.txt_new_password_sso.value = ""
             self._notificar("Credenciales de On Net Fibra actualizadas")
 
     # --- LÓGICA DE PLANTILLAS (Mensajería) ---
@@ -159,15 +169,17 @@ class MainScreenController:
     # --- LÓGICA DE ACCIÓN (Ejecución de Tareas) ---
 
     def ejecutar_flujo_reporte(self, e):
-        try:
-            self._notificar("🖥️ Abriendo navegador para ServiceNow...")
-            self.report_service.descargar_reporte_selenium()
+        # Recuperamos las tres piezas de información
+        user_corp = self.config_service.get_email()
+        token_envio = self.config_service.get_token()  # Para correos/mensajes
+        pass_sso = self.config_service.get_password_sso()  # PARA SELENIUM
 
-            # Aquí podrías pedirle al usuario que ahora pegue la ruta del archivo que bajó
-            self._notificar(
-                "📂 Ahora pega la ruta del archivo descargado arriba.")
-        except Exception as ex:
-            self._notificar(f"❌ Error: {str(ex)}")
+        if not pass_sso:
+            self._notificar("⚠️ Falta la contraseña SSO en la configuración.")
+            return
+
+        # Lanzamos la descarga pasándole la contraseña de red
+        self.report_service.descargar_automaticamente(user_corp, pass_sso)
 
     def _notificar(self, texto):
         """Helper para mostrar mensajes rápidos en la parte inferior (SnackBar)"""
