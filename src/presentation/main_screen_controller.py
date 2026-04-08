@@ -9,12 +9,13 @@ class MainScreenController:
     """
 
     # --- ACTUALIZADO: Ahora recibe mail_list_service ---
-    def __init__(self, page, config_service, message_service, mail_list_service, report_service):
+    def __init__(self, page, config_service, message_service, mail_list_service, report_service, data_processor_service):
         self.page = page
         self.config_service = config_service
         self.message_service = message_service
         self.mail_list_service = mail_list_service  # Servicio para la lista de correos
         self.report_service = report_service
+        self.data_processor_service = data_processor_service
 
         # --- REFERENCIAS DE UI (Vínculos con la pantalla) ---
         self.lbl_actual_email = None
@@ -171,18 +172,77 @@ class MainScreenController:
     def ejecutar_flujo_reporte(self, e):
         # Recuperamos las tres piezas de información
         user_corp = self.config_service.get_email()
-        token_envio = self.config_service.get_token()  # Para correos/mensajes
-        pass_sso = self.config_service.get_password_sso()  # PARA SELENIUM
+        # token_envio = self.config_service.get_token()  # Para correos/mensajes
+        # pass_sso = self.config_service.get_password_sso()  # PARA SELENIUM
 
-        if not pass_sso:
-            self._notificar("⚠️ Falta la contraseña SSO en la configuración.")
-            return
+        # if not pass_sso:
+        #     self._notificar("⚠️ Falta la contraseña SSO en la configuración.")
+        #     return
 
-        # Lanzamos la descarga pasándole la contraseña de red
-        self.report_service.descargar_automaticamente(user_corp, pass_sso)
+        # # Lanzamos la descarga pasándole la contraseña de red
+        # self.report_service.descargar_automaticamente(user_corp, pass_sso)
+        try:
+            # PASO 1: Descargar de ServiceNow
+        self.report_service.descargar_excel()
+
+        # PASO 2: Procesar datos (Pandas)
+        self.data_processor_service.procesar_archivo()
+
+        # PASO 3: Generar la imagen para WhatsApp/Correo
+        # (Aquí podrías llamar a tu NotificacionService para la foto)
+
+        # PASO 4: Llamar a nuestra nueva función de correo
+        exito_mail = self.enviar_notificaciones_finales()
+
+        if exito_mail:
+            print("🚀 Todo el proceso terminó con éxito")
+
+    except Exception as ex:
+        print(f"❌ Error en el flujo: {ex}")
 
     def _notificar(self, texto):
         """Helper para mostrar mensajes rápidos en la parte inferior (SnackBar)"""
         self.page.snack_bar = ft.SnackBar(ft.Text(texto))
         self.page.snack_bar.open = True
         self.page.update()
+
+    def enviar_notificaciones_finales(self):
+    """
+    Se encarga exclusivamente de despachar el correo y WhatsApp
+    usando los datos actuales de la interfaz.
+    """
+    # 1. Capturamos el texto del TextBox que identificamos
+    cuerpo_final = self.txt_mensaje_correo.value
+
+    # 2. Instanciamos el servicio (importación local para evitar ciclos)
+    from src.business.mail_service import MailService
+    mailer = MailService()
+
+    # 3. Definimos los adjuntos que ya deben estar en assets
+    archivos = [
+        "assets/outputs/reporte_captura.png",
+        "assets/inputs/sn_customerservice_case.xlsx"
+    ]
+
+    # 4. Ejecutamos el envío
+    print("📧 Iniciando envío de correo...")
+    return mailer.enviar_reporte(
+        cuerpo_mensaje=cuerpo_final,
+        asunto="📊 Reporte Automatizado - On Net Fibra",
+        adjuntos=archivos
+    )
+
+    def enviar_notificacion_correo(self):
+        # Tomamos el texto del TextBox de la interfaz
+    mensaje_ui = self.txt_mensaje_correo.value
+
+    # Llamamos al servicio
+    from src.business.mail_service import MailService
+    mailer = MailService()
+
+    # Ejecutamos
+    resultado = mailer.enviar_reporte(
+        cuerpo_mensaje=mensaje_ui,
+        adjuntos=["assets/reporte_captura.png", "assets/Informe_Tiempos.xlsx"]
+    )
+    return resultado

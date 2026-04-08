@@ -2,13 +2,13 @@ import flet as ft
 from src.presentation.main_screen_controller import MainScreenController
 
 
-def main_screen(page: ft.Page, config_service, message_service, mail_list_service, report_service):
+def main_screen(page: ft.Page, config_service, message_service, mail_list_service, report_service, data_processor_service):
     """
     VISTA PRINCIPAL: Estructura con alineación simétrica corregida.
     """
     # 1. Instanciar el Controlador
     controller = MainScreenController(
-        page, config_service, message_service, mail_list_service, report_service)
+        page, config_service, message_service, mail_list_service, report_service, data_processor_service)
 
     # 2. DEFINICIÓN DE COMPONENTES VISUALES (Con anchos fijos para alinear)
     # Columna "Valores Actuales" (Ancho 220 para que quepa el correo largo de On Net)

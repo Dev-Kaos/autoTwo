@@ -4,6 +4,7 @@ from src.business.config_user_service import ConfigUserService
 from src.business.message_service import MessageService
 from src.business.mail_list_service import MailListService  # <--- IMPORTAR EL NUEVO
 from src.business.report_service import ReportService
+from src.business.data_processor_service import DataProcessorService
 
 
 def main(page: ft.Page):
@@ -15,6 +16,7 @@ def main(page: ft.Page):
     message_service = MessageService()
     mail_list_service = MailListService()  # <--- CREAR LA INSTANCIA
     report_service = ReportService(config_service)
+    data_processor_service = DataProcessorService()
 
     # 2. Cargar la pantalla pasando los 5 argumentos en el orden correcto
     page.add(
@@ -23,7 +25,8 @@ def main(page: ft.Page):
             config_service,
             message_service,
             mail_list_service,  # <--- AGREGAR AQUÍ
-            report_service
+            report_service,
+            data_processor_service,
         )
     )
     page.update()
